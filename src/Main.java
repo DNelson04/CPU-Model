@@ -1,5 +1,6 @@
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+        CPU cpu = new CPU("processes.csv", 2);
+        cpu.run();
     }
 }

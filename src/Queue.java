@@ -1,71 +1,81 @@
 public class Queue{
-    QNode front, rear;
+    QNode[] fronts, rears;
+    private final int prioLevels;
 
-    public Queue(){
-        front = null;
-        rear = null;
+    public Queue(int numPrioLevels){
+        fronts = new QNode[numPrioLevels];
+        rears = new QNode[numPrioLevels];
+        prioLevels = numPrioLevels;
     }
 
     boolean isEmpty(){
-        return front == null && rear == null;
+        for (int i = 0; i < prioLevels; i++) {
+            if (fronts[i] != null) return false;
+        }
+        return true;
     }
 
-    void enqueue(int pid){
-        QNode node = new QNode(pid);
-        if(rear == null){
-            front = node;
-            rear = node;
+    void enqueue(Process process, int priority) {
+        if (priority >= prioLevels) {
+            return;
         }
-        rear.setNext(node);
-        rear = node;
+        QNode node = new QNode(process);
+        if (rears[priority] == null) {
+            fronts[priority] = node;
+        } else {
+            rears[priority].setNext(node);
+        }
+        rears[priority] = node;
     }
 
-    int dequeue(){
-        if(isEmpty()){
-            System.out.println("L");
-            return -1;
+    Process dequeue() {
+        for (int i = 0; i < prioLevels; i++) {
+            if (fronts[i] != null) {
+                Process toReturn = fronts[i].getProcess();
+                fronts[i] = fronts[i].getNext();
+                if (fronts[i] == null) {
+                    rears[i] = null;
+                }
+                return toReturn;
+            }
         }
-        int toReturn = front.getPid();
-        front = front.getNext();
-
-        if(front == null){
-            rear = null;
-        }
-        return toReturn;
+        return null;
     }
 
-    int getFront(){
-        if (isEmpty()) {
-            System.out.println("Queue is empty");
-            return -1;
+    Process getFront() {
+        for (int i = 0; i < prioLevels; i++) {
+            if (fronts[i] != null) {
+                return fronts[i].getProcess();
+            }
         }
-        return front.getPid();
+        System.out.println("Queue is empty");
+        return null;
     }
 
-    int getRear(){
-        if (isEmpty()) {
-            System.out.println("Queue is empty");
-            return -1;
+    Process getRear(int priority) {
+        if (priority < prioLevels && rears[priority] != null) {
+            return rears[priority].getProcess();
         }
-        return rear.getPid();
+        System.out.println("Invalid priority or queue is empty at this level");
+        return null;
     }
 
 }
 class QNode{
-    private int pid;
+    private Process process;
     private QNode next;
 
-    public QNode(int pid){
-        this.pid = pid;
+    public QNode(Process process){
+        this.process = process;
         this.next = null;
     }
 
-    public int getPid() {
-        return pid;
+    public Process getProcess() {
+        return process;
     }
 
-    public void setPid(int pid) {
-        this.pid = pid;
+    public void setProcess(Process process) {
+        this.process = process;
     }
 
     public QNode getNext() {

@@ -1,19 +1,22 @@
-public class Scheduler {
-    static public int timeQuantum;
-    private Queue priority1,priority2,priority3,priority4;
+import java.util.List;
 
-    public Scheduler(int timeQuantum){
-        Scheduler.timeQuantum = timeQuantum;
-        priority1 = new Queue();
-        priority2 = new Queue();
-        priority3 = new Queue();
-        priority4 = new Queue();
+public class Scheduler implements ClockObserver {
+    private Queue queue;
+
+
+    public Scheduler(List<Process> processList, int numPriorityLevels){
+        this.queue = new Queue(numPriorityLevels);
+        for(Process process : processList){
+
+        }
+    }
+    @Override
+    public void onUpdate(int time) {
+
     }
 
-    public Scheduler(){
-        this(10);
+
+    public Process getNext(){
+
     }
-
-
 }
-
