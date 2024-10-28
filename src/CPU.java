@@ -4,35 +4,47 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPU extends Thread implements ClockObserver{
+public class CPU extends Thread implements ProcessObserver{
     private Scheduler scheduler;
-    private List<Process> processes;
-    private boolean running;
+    private boolean lock;
     private Process runningProcess;
     private Clock clock;
 
     public CPU(String processFile, int timeQuantum){
-        this.processes = readProcessesFromCSV(processFile);
-        this.scheduler = new Scheduler(processes,getHighestPriority(processes));
         this.clock = Clock.getInstance(timeQuantum);
-        clock.addObserver(this);
+        List<Process> processes = readProcessesFromCSV(processFile);
+        this.scheduler = new Scheduler(processes,getHighestPriority(processes));
+        clock.addObserver(scheduler);
+    }
+
+    public void run(){
         clock.startClock();
     }
 
-    private int getHighestPriority(List<Process> processes) {
-        if (processes == null || processes.isEmpty()) {
-            throw new IllegalArgumentException("Process list cannot be null or empty");
+    public void process(){
+        runningProcess.setObserver(this);
+        if(runningProcess.isStarted()){
+            runningProcess.process();
         }
-
-        int highestPriority = Integer.MAX_VALUE;
-        for (Process process : processes) {
-            if (process.getPriority() < highestPriority) {
-                highestPriority = process.getPriority();
-            }
+        else{
+            runningProcess.start();
         }
-        return highestPriority;
     }
 
+    public boolean isLocked() {
+        return lock;
+    }
+
+    public void setLock(boolean lock) {
+        this.lock = lock;
+    }
+
+    private int getHighestPriority(List<Process> processes) {
+        return processes.stream()
+                .map(Process::retPriority)
+                .max(Integer::compareTo)
+                .orElseThrow(() -> new IllegalArgumentException("Empty process list"));
+    }
 
     public static List<Process> readProcessesFromCSV(String filePath) {
         List<Process> processes = new ArrayList<>();
@@ -55,12 +67,68 @@ public class CPU extends Thread implements ClockObserver{
     }
 
     @Override
-    public void onUpdate(int time) {
-        if(runningProcess == null){
-            runningProcess = scheduler.getNext();
-            lock = true;
-        } else if () {
+    public void finishProcess() {
+        runningProcess.halt();
+        clock.resetQuantum();
+        setLock(false);
+        runningProcess = scheduler.dequeue();
+        if (runningProcess != null) {
+            process();
+            setLock(true);
+        }
+    }
 
+    class Scheduler implements ClockObserver {
+        private Queue queue;
+        private List<Process> processes;
+
+
+        public Scheduler(List<Process> processList, int numPriorityLevels){
+            this.queue = new Queue(numPriorityLevels);
+            this.processes = processList;
+        }
+        @Override
+        public void onUpdate(int time) {
+            System.out.println("time: " + time);
+            for(Process process : processes){
+                if(process.getArrivalTime() == time){
+                    System.out.println("Process arriving: " + process.getProcessID());
+                    queue.enqueue(process);
+                }
+            }
+            System.out.println("onUpdate() : running process " + (runningProcess != null ? runningProcess.getProcessID() : "None")
+                    + ", remaining time: " + (runningProcess != null ? runningProcess.getBurstTime() : "N/A"));
+        }
+
+        @Override
+        public void notifyQuantum(int quantum) {
+            // Check if the CPU is currently locked on a running process
+            if (isLocked() && runningProcess != null) {
+                System.out.println("Stopping current process: " + runningProcess.getProcessID());
+                runningProcess.halt();
+                queue.enqueue(runningProcess); // Re-enqueue the current process
+                runningProcess = null;
+                setLock(false); // Release the lock
+            }
+
+            // Dequeue the next process if available
+            runningProcess = dequeue();
+
+            if (runningProcess != null) {
+                System.out.println("notifyQuantum() : process switched to " + runningProcess.getProcessID()
+                        + ", remaining time: " + runningProcess.getBurstTime());
+                process(); // Process the dequeued process
+                setLock(true); // Lock the CPU
+            } else {
+                System.out.println("No process to switch to. Queue is empty.");
+                setLock(false);
+            }
+        }
+        public Process dequeue(){
+            return queue.dequeue();
+        }
+        public void enQueue(Process process){
+            queue.enqueue(process);
         }
     }
 }

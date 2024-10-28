@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 public class Queue{
     QNode[] fronts, rears;
     private final int prioLevels;
@@ -15,23 +17,24 @@ public class Queue{
         return true;
     }
 
-    void enqueue(Process process, int priority) {
-        if (priority >= prioLevels) {
+    void enqueue(Process process) {
+        if (process.retPriority()-1 > prioLevels) {
             return;
         }
         QNode node = new QNode(process);
-        if (rears[priority] == null) {
-            fronts[priority] = node;
+        if (rears[process.retPriority()-1] == null) {
+            fronts[process.retPriority()-1] = node;
         } else {
-            rears[priority].setNext(node);
+            rears[process.retPriority()-1].setNext(node);
         }
-        rears[priority] = node;
+        rears[process.retPriority()-1] = node;
     }
 
     Process dequeue() {
         for (int i = 0; i < prioLevels; i++) {
             if (fronts[i] != null) {
                 Process toReturn = fronts[i].getProcess();
+                System.out.println("Dequeueing process with ID: " + toReturn.getProcessID() + " from priority level " + i);
                 fronts[i] = fronts[i].getNext();
                 if (fronts[i] == null) {
                     rears[i] = null;
@@ -42,13 +45,11 @@ public class Queue{
         return null;
     }
 
-    Process getFront() {
-        for (int i = 0; i < prioLevels; i++) {
-            if (fronts[i] != null) {
-                return fronts[i].getProcess();
-            }
+    Process getFront(int priority) {
+        if (priority < prioLevels && rears[priority] != null) {
+            return fronts[priority].getProcess();
         }
-        System.out.println("Queue is empty");
+        System.out.println("Invalid priority or queue is empty at this level");
         return null;
     }
 
@@ -60,6 +61,14 @@ public class Queue{
         return null;
     }
 
+    @Override
+    public String toString() {
+        return "Queue{" +
+                "fronts=" + Arrays.toString(fronts) +
+                ", rears=" + Arrays.toString(rears) +
+                ", prioLevels=" + prioLevels +
+                '}';
+    }
 }
 class QNode{
     private Process process;
@@ -85,4 +94,6 @@ class QNode{
     public void setNext(QNode next) {
         this.next = next;
     }
+
+
 }

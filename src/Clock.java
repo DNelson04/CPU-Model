@@ -3,14 +3,18 @@ import java.util.List;
 
 public class Clock extends Thread {
     private static Clock instance;
+    private int quantum, quantumCount;
     private int time;
+    private long startTime;
     private boolean running;
     private List<ClockObserver> observers;
     private static int TIME_QUANTUM; // 2 second
 
     public Clock(int timeQuantum) {
+        this.quantum = 0;
+        this.quantumCount = 0;
         this.time = 0;
-        this.running = true;
+        this.running = false;
         this.observers = new ArrayList<>();
         TIME_QUANTUM = timeQuantum;
     }
@@ -26,8 +30,16 @@ public class Clock extends Thread {
         return instance;
     }
 
+    public int getQuantum() {
+        return quantum;
+    }
+
     public int getTime() {
         return time;
+    }
+
+    public long getElapsedTime() {
+        return System.currentTimeMillis() - startTime;
     }
 
     public void addObserver(ClockObserver observer) {
@@ -37,7 +49,11 @@ public class Clock extends Thread {
     public void removeObserver(ClockObserver observer) {
         observers.remove(observer);
     }
-
+    private void quantum(int quantum){
+        for (ClockObserver observer : observers) {
+            observer.notifyQuantum(quantum);
+        }
+    }
     private void notifyObservers() {
         for (ClockObserver observer : observers) {
             observer.onUpdate(time);
@@ -45,6 +61,10 @@ public class Clock extends Thread {
     }
 
     public void startClock() {
+        this.startTime = System.currentTimeMillis();
+        notifyObservers();
+        quantum(0);
+        running = true;
         this.start();
     }
 
@@ -56,13 +76,23 @@ public class Clock extends Thread {
     public void run() {
         while (running) {
             try {
-                Thread.sleep(TIME_QUANTUM);
+                Thread.sleep(1000);
+                quantum++;
                 time++;
-                System.out.println("Clock time: " + time);
-                notifyObservers(); // Notify all observers of the time update
+                System.out.println("\nClock time: " + time);
+                notifyObservers();
+                if(quantum == TIME_QUANTUM){
+                    quantumCount++;
+                    quantum(quantumCount);
+                    quantum = 0;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void resetQuantum() {
+        quantum = 0;
     }
 }
