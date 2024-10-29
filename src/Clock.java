@@ -38,7 +38,7 @@ public class Clock extends Thread {
         return time;
     }
 
-    public long getElapsedTime() {
+    public synchronized long getElapsedTime() {
         return System.currentTimeMillis() - startTime;
     }
 
@@ -76,7 +76,7 @@ public class Clock extends Thread {
     public void run() {
         while (running) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(3000);
                 quantum++;
                 time++;
                 System.out.println("\nClock time: " + time);

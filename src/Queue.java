@@ -18,16 +18,16 @@ public class Queue{
     }
 
     void enqueue(Process process) {
-        if (process.retPriority()-1 > prioLevels) {
+        if (process.returnPriority()-1 > prioLevels) {
             return;
         }
         QNode node = new QNode(process);
-        if (rears[process.retPriority()-1] == null) {
-            fronts[process.retPriority()-1] = node;
+        if (rears[process.returnPriority()-1] == null) {
+            fronts[process.returnPriority()-1] = node;
         } else {
-            rears[process.retPriority()-1].setNext(node);
+            rears[process.returnPriority()-1].setNext(node);
         }
-        rears[process.retPriority()-1] = node;
+        rears[process.returnPriority()-1] = node;
     }
 
     Process dequeue() {

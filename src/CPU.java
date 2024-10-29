@@ -21,15 +21,6 @@ public class CPU extends Thread implements ProcessObserver{
         clock.startClock();
     }
 
-    public void process(){
-        runningProcess.setObserver(this);
-        if(runningProcess.isStarted()){
-            runningProcess.process();
-        }
-        else{
-            runningProcess.start();
-        }
-    }
 
     public boolean isLocked() {
         return lock;
@@ -41,7 +32,7 @@ public class CPU extends Thread implements ProcessObserver{
 
     private int getHighestPriority(List<Process> processes) {
         return processes.stream()
-                .map(Process::retPriority)
+                .map(Process::returnPriority)
                 .max(Integer::compareTo)
                 .orElseThrow(() -> new IllegalArgumentException("Empty process list"));
     }
@@ -65,22 +56,29 @@ public class CPU extends Thread implements ProcessObserver{
         }
         return processes;
     }
-
+    //Logic for thread handling
+    public void initiateProcess(){
+        runningProcess.setObserver(this);
+        if (runningProcess.isStarted()){
+            runningProcess.resumeProcess();
+        }else {
+            runningProcess.start();
+        }
+    }
     @Override
     public void finishProcess() {
-        runningProcess.halt();
         clock.resetQuantum();
         setLock(false);
         runningProcess = scheduler.dequeue();
         if (runningProcess != null) {
-            process();
+            initiateProcess();
             setLock(true);
         }
     }
 
     class Scheduler implements ClockObserver {
-        private Queue queue;
-        private List<Process> processes;
+        private final Queue queue;
+        private final List<Process> processes;
 
 
         public Scheduler(List<Process> processList, int numPriorityLevels){
@@ -105,7 +103,7 @@ public class CPU extends Thread implements ProcessObserver{
             // Check if the CPU is currently locked on a running process
             if (isLocked() && runningProcess != null) {
                 System.out.println("Stopping current process: " + runningProcess.getProcessID());
-                runningProcess.halt();
+                runningProcess.pauseProcess();
                 queue.enqueue(runningProcess); // Re-enqueue the current process
                 runningProcess = null;
                 setLock(false); // Release the lock
@@ -117,7 +115,7 @@ public class CPU extends Thread implements ProcessObserver{
             if (runningProcess != null) {
                 System.out.println("notifyQuantum() : process switched to " + runningProcess.getProcessID()
                         + ", remaining time: " + runningProcess.getBurstTime());
-                process(); // Process the dequeued process
+                initiateProcess(); // Process the dequeued process
                 setLock(true); // Lock the CPU
             } else {
                 System.out.println("No process to switch to. Queue is empty.");
