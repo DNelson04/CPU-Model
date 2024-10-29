@@ -36,7 +36,7 @@ public class Process extends Thread implements ClockObserver{
             }
             synchronized (this) {
                 currentElapsed = clock.getElapsedTime() - startTime;
-                if (currentElapsed > 1000+accumulatedTime) {
+                if (currentElapsed > 1000 + accumulatedTime) {
                     decrementBurstTime();
                     accumulatedTime += 1000;
                     System.out.println("Processing... Remaining burst time: " + burstTime);
