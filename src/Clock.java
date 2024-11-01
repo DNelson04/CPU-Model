@@ -76,7 +76,7 @@ public class Clock extends Thread {
     public void run() {
         while (running) {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(1000);
                 quantum++;
                 time++;
                 System.out.println("\nClock time: " + time);

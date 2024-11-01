@@ -1,8 +1,6 @@
 public class Process extends Thread implements ClockObserver{
     private int burstTime, priority, priorityEscalation;
-    private long lifetime;
-    private long currentElapsed;
-    private long finishTime;
+    private long lifetime,currentElapsed,finishTime, accumulatedTime, startTime, idleTime;
     private final int arrivalTime, processID;
     private ProcessObserver observer;
     private Clock clock;
@@ -21,13 +19,16 @@ public class Process extends Thread implements ClockObserver{
 
     public void process(){
         started = true;
-        long startTime = clock.getElapsedTime();
-        long accumulatedTime = 0;
+        startTime = clock.getElapsedTime();
+        accumulatedTime = 0;
+        long stopTime;
         while (started) {
             synchronized (this) {
                 while (paused) {
                     try {
+                        stopTime = clock.getElapsedTime();
                         wait();
+                        idleTime += clock.getElapsedTime()-stopTime;
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         return;
@@ -35,13 +36,12 @@ public class Process extends Thread implements ClockObserver{
                 }
             }
             synchronized (this) {
-                currentElapsed = clock.getElapsedTime() - startTime;
+                currentElapsed = clock.getElapsedTime() - idleTime - startTime;
                 if (currentElapsed > 1000+accumulatedTime) {
                     decrementBurstTime();
                     accumulatedTime += 1000;
                     System.out.println("Processing... Remaining burst time: " + burstTime);
                 }
-                System.out.println(processID + " " + currentElapsed + " " + accumulatedTime);
                 if (burstTime == 0) {
                     finishProcess();
                     started = false;
