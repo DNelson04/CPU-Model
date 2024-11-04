@@ -34,7 +34,6 @@ public class Queue{
         for (int i = 0; i < prioLevels; i++) {
             if (fronts[i] != null) {
                 Process toReturn = fronts[i].getProcess();
-                System.out.println("Dequeueing process with ID: " + toReturn.getProcessID() + " from priority level " + i);
                 fronts[i] = fronts[i].getNext();
                 if (fronts[i] == null) {
                     rears[i] = null;

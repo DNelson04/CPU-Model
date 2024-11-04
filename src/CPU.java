@@ -120,6 +120,7 @@ public class CPU extends Thread implements ProcessObserver{
             } else {
                 System.out.println("No process to switch to. Queue is empty.");
                 setLock(false);
+                clock.stopClock();
             }
         }
         public Process dequeue(){

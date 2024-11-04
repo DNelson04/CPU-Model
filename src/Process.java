@@ -17,6 +17,14 @@ public class Process extends Thread implements ClockObserver{
         clock = Clock.getInstance();
     }
 
+    public long getAccumulatedTime() {
+        return accumulatedTime;
+    }
+
+    public synchronized void setAccumulatedTime(long accumulatedTime) {
+        this.accumulatedTime = accumulatedTime;
+    }
+
     public void process(){
         started = true;
         startTime = clock.getElapsedTime();
@@ -36,10 +44,11 @@ public class Process extends Thread implements ClockObserver{
                 }
             }
             synchronized (this) {
-                currentElapsed = clock.getElapsedTime() - idleTime - startTime;
+                currentElapsed = getElapsed();
+                System.out.println(processID+ " " + currentElapsed + " " + idleTime + " " + clock.getElapsedTime());
                 if (currentElapsed > 1000+accumulatedTime) {
-                    decrementBurstTime();
-                    accumulatedTime += 1000;
+                    setAccumulatedTime(accumulatedTime + 1000);
+                    this.burstTime--;
                     System.out.println("Processing... Remaining burst time: " + burstTime);
                 }
                 if (burstTime == 0) {
@@ -47,9 +56,10 @@ public class Process extends Thread implements ClockObserver{
                     started = false;
                     System.out.println("Process " + processID + " finished");
                     finishTime = clock.getElapsedTime();
+                    lifetime = finishTime - startTime;
                 }
                 try {
-                    Thread.sleep(50); // Reduce CPU usage by pausing briefly
+                    Thread.sleep(10); // Reduce CPU usage by pausing briefly
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     System.out.println("Process " + getProcessID() + " interrupted.");
@@ -69,16 +79,8 @@ public class Process extends Thread implements ClockObserver{
         this.observer = observer;
     }
 
-    public synchronized void decrementBurstTime() {
-        this.burstTime--;
-    }
-
-    public synchronized void decElapsedInSec() {
-        this.currentElapsed -= 1000;
-    }
-
     public synchronized long getElapsed(){
-        return currentElapsed;
+        return clock.getElapsedTime() - idleTime - startTime;
     }
 
     public int getBurstTime() {
@@ -86,13 +88,13 @@ public class Process extends Thread implements ClockObserver{
     }
 
     //getPriority() is taken by thread
-
     public int returnPriority() {
         return priority;
     }
+
     public void increasePriority() {
         if(priority > 1) {
-            this.priority = priority--;
+            this.priority--;
         }
     }
 
@@ -110,10 +112,6 @@ public class Process extends Thread implements ClockObserver{
     }
     public long getLifetime() {
         return lifetime;
-    }
-
-    public void setLifetime(long lifetime) {
-        this.lifetime = lifetime;
     }
 
     public long getFinishTime() {
