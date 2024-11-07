@@ -1,5 +1,5 @@
 public class Process extends Thread implements ClockObserver{
-    private int burstTime, priority, priorityEscalation;
+    private int burstTime, priority, priorityEscalation, contextSwitch;
     private long lifetime,currentElapsed,finishTime, accumulatedTime, startTime, idleTime;
     private final int arrivalTime, processID;
     private ProcessObserver observer;
@@ -17,14 +17,6 @@ public class Process extends Thread implements ClockObserver{
         clock = Clock.getInstance();
     }
 
-    public long getAccumulatedTime() {
-        return accumulatedTime;
-    }
-
-    public synchronized void setAccumulatedTime(long accumulatedTime) {
-        this.accumulatedTime = accumulatedTime;
-    }
-
     public void process(){
         started = true;
         startTime = clock.getElapsedTime();
@@ -34,6 +26,7 @@ public class Process extends Thread implements ClockObserver{
             synchronized (this) {
                 while (paused) {
                     try {
+                        contextSwitch++;
                         stopTime = clock.getElapsedTime();
                         wait();
                         idleTime += clock.getElapsedTime()-stopTime;
@@ -67,10 +60,10 @@ public class Process extends Thread implements ClockObserver{
             }
         }
     }
+
     public void run(){
         process();
     }
-
     private void finishProcess() {
         observer.finishProcess();
     }
@@ -88,10 +81,10 @@ public class Process extends Thread implements ClockObserver{
     }
 
     //getPriority() is taken by thread
+
     public int returnPriority() {
         return priority;
     }
-
     public void increasePriority() {
         if(priority > 1) {
             this.priority--;
@@ -109,6 +102,14 @@ public class Process extends Thread implements ClockObserver{
     public synchronized void resumeProcess(){
         paused = false;
         notify();
+    }
+
+    public long getAccumulatedTime() {
+        return accumulatedTime;
+    }
+
+    public synchronized void setAccumulatedTime(long accumulatedTime) {
+        this.accumulatedTime = accumulatedTime;
     }
     public long getLifetime() {
         return lifetime;
@@ -128,6 +129,10 @@ public class Process extends Thread implements ClockObserver{
 
     public int getArrivalTime() {
         return arrivalTime;
+    }
+
+    public int getContextSwitches() {
+        return contextSwitch;
     }
 
     @Override
@@ -154,5 +159,4 @@ public class Process extends Thread implements ClockObserver{
                 ", priority=" + priority +
                 '}';
     }
-
 }

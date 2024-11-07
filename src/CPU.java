@@ -9,6 +9,7 @@ public class CPU extends Thread implements ProcessObserver{
     private boolean lock;
     private Process runningProcess;
     private Clock clock;
+    private Statistics statistics;
 
     public CPU(String processFile, int timeQuantum){
         this.clock = Clock.getInstance(timeQuantum);
@@ -128,6 +129,48 @@ public class CPU extends Thread implements ProcessObserver{
         }
         public void enQueue(Process process){
             queue.enqueue(process);
+        }
+    }
+
+    class Statistics{
+        private double avgTurnaround;
+        private double avgWaitTime;
+        private double avgContextSwitches;
+        private double throughput;
+        private double cpuUtilization;
+        private int numProcesses;
+
+        public Statistics(){
+
+        }
+        //averages can be calculated with (currentaverages/numprocesses) + newprocessinfo/numProcesses
+        private void saveProcessInfo(Process process){
+            numProcesses++;
+            updateTurnaround(process);
+            updateWaitTime(process);
+            updateContextSwitches(process);
+            updateThroughput(process);
+            updateUtilization(process);
+        }
+
+        private void updateUtilization(Process process) {
+
+        }
+
+        private void updateThroughput(Process process) {
+
+        }
+
+        private void updateContextSwitches(Process process) {
+
+        }
+
+        private void updateWaitTime(Process process) {
+
+        }
+
+        private void updateTurnaround(Process process) {
+
         }
     }
 }
