@@ -1,6 +1,6 @@
 public class Process extends Thread implements ClockObserver{
-    private int burstTime, priority, priorityEscalation;
-    private long lifetime,currentElapsed,finishTime, accumulatedTime, startTime, idleTime;
+    private int burstTime, priority, priorityEscalation, numContextSwitches;
+    private long currentElapsed,finishTime, accumulatedTime, startTime, idleTime;
     private final int arrivalTime, processID;
     private ProcessObserver observer;
     private Clock clock;
@@ -45,18 +45,16 @@ public class Process extends Thread implements ClockObserver{
             }
             synchronized (this) {
                 currentElapsed = getElapsed();
-                System.out.println(processID+ " " + currentElapsed + " " + idleTime + " " + clock.getElapsedTime());
                 if (currentElapsed > 1000+accumulatedTime) {
                     setAccumulatedTime(accumulatedTime + 1000);
                     this.burstTime--;
                     System.out.println("Processing... Remaining burst time: " + burstTime);
                 }
                 if (burstTime == 0) {
+                    finishTime = clock.getElapsedTime();
                     finishProcess();
                     started = false;
                     System.out.println("Process " + processID + " finished");
-                    finishTime = clock.getElapsedTime();
-                    lifetime = finishTime - startTime;
                 }
                 try {
                     Thread.sleep(10); // Reduce CPU usage by pausing briefly
@@ -71,7 +69,7 @@ public class Process extends Thread implements ClockObserver{
         process();
     }
 
-    private void finishProcess() {
+    private synchronized void finishProcess() {
         observer.finishProcess();
     }
 
@@ -110,16 +108,12 @@ public class Process extends Thread implements ClockObserver{
         paused = false;
         notify();
     }
-    public long getLifetime() {
-        return lifetime;
-    }
 
-    public long getFinishTime() {
-        return finishTime;
-    }
+    public long getResponseTime(){return startTime - arrivalTime * 1000L;}
 
-    public void setFinishTime(long finishTime) {
-        this.finishTime = finishTime;
+    public double getWaitTime(){return idleTime;}
+    public double getTurnaroundTime() {
+        return finishTime-startTime;
     }
 
     public int getProcessID() {
@@ -132,7 +126,6 @@ public class Process extends Thread implements ClockObserver{
 
     @Override
     public void onUpdate(int time) {
-        this.lifetime = clock.getElapsedTime() - arrivalTime;
         priorityEscalation++;
         if(priorityEscalation > 15){
             increasePriority();

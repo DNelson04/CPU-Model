@@ -9,18 +9,20 @@ public class CPU extends Thread implements ProcessObserver{
     private boolean lock;
     private Process runningProcess;
     private Clock clock;
+    private int numCompletedProcesses, numContextSwitches;
+    private Statistics statistics;
 
     public CPU(String processFile, int timeQuantum){
         this.clock = Clock.getInstance(timeQuantum);
         List<Process> processes = readProcessesFromCSV(processFile);
         this.scheduler = new Scheduler(processes,getHighestPriority(processes));
         clock.addObserver(scheduler);
+        statistics = new Statistics(clock.getQuantum());
     }
 
     public void run(){
         clock.startClock();
     }
-
 
     public boolean isLocked() {
         return lock;
@@ -67,10 +69,19 @@ public class CPU extends Thread implements ProcessObserver{
     }
     @Override
     public void finishProcess() {
-        clock.resetQuantum();
-        setLock(false);
+        synchronized (this){
+            clock.resetQuantum();
+            setLock(false);
+            statistics.saveProcessInfo(runningProcess, clock.getElapsedTime(), numContextSwitches);
+            numCompletedProcesses++;
+            if (numCompletedProcesses >= scheduler.processes.size()) {
+                clock.stopClock();
+                System.out.println(statistics.toString());
+            }
+        }
         runningProcess = scheduler.dequeue();
         if (runningProcess != null) {
+            numContextSwitches++;
             initiateProcess();
             setLock(true);
         }
@@ -87,15 +98,19 @@ public class CPU extends Thread implements ProcessObserver{
         }
         @Override
         public void onUpdate(int time) {
-            System.out.println("time: " + time);
+            if((numCompletedProcesses < scheduler.processes.size())) {
+                System.out.println("\ntime: " + time);
+            }
             for(Process process : processes){
                 if(process.getArrivalTime() == time){
                     System.out.println("Process arriving: " + process.getProcessID());
                     queue.enqueue(process);
                 }
             }
-            System.out.println("onUpdate() : running process " + (runningProcess != null ? runningProcess.getProcessID() : "None")
-                    + ", remaining time: " + (runningProcess != null ? runningProcess.getBurstTime() : "N/A"));
+            if(runningProcess != null){
+                System.out.println("onUpdate() : running process " + runningProcess.getProcessID()
+                        + ", remaining time: " + runningProcess.getBurstTime());
+            }
         }
 
         @Override
@@ -115,6 +130,7 @@ public class CPU extends Thread implements ProcessObserver{
             if (runningProcess != null) {
                 System.out.println("notifyQuantum() : process switched to " + runningProcess.getProcessID()
                         + ", remaining time: " + runningProcess.getBurstTime());
+                numContextSwitches++;
                 initiateProcess(); // Process the dequeued process
                 setLock(true); // Lock the CPU
             } else {
@@ -123,13 +139,12 @@ public class CPU extends Thread implements ProcessObserver{
                 clock.stopClock();
             }
         }
+
         public Process dequeue(){
             return queue.dequeue();
         }
-        public void enQueue(Process process){
-            queue.enqueue(process);
-        }
     }
+
 }
 
 

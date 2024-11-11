@@ -31,7 +31,7 @@ public class Clock extends Thread {
     }
 
     public int getQuantum() {
-        return quantum;
+        return TIME_QUANTUM;
     }
 
     public int getTime() {
@@ -79,7 +79,6 @@ public class Clock extends Thread {
                 Thread.sleep(1000);
                 quantum++;
                 time++;
-                System.out.println("\nClock time: " + time);
                 notifyObservers();
                 if(quantum == TIME_QUANTUM){
                     quantumCount++;
